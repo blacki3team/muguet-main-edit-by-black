@@ -6,11 +6,6 @@ on:
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
-    inputs:
-      game_zip_url:
-        description: 'Optional URL to download game.zip'
-        required: false
-        default: ''
 
 jobs:
   build:
@@ -27,14 +22,20 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Set up Android SDK & NDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android NDK
+      - name: Locate Android SDK and NDK
         run: |
-          sdkmanager --install "ndk;26.1.10909125" "platforms;android-34" "build-tools;34.0.0"
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
-          echo "NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          # GitHub Actions Ubuntu runners come with NDK pre-installed
+          if [ -d "$ANDROID_HOME/ndk" ]; then
+            SELECTED_NDK=$(ls -d $ANDROID_HOME/ndk/* | sort -V | tail -n 1)
+          else
+            yes | sdkmanager --licenses
+            sdkmanager "ndk;26.3.11579264"
+            SELECTED_NDK="$ANDROID_HOME/ndk/26.3.11579264"
+          fi
+          echo "Using NDK: $SELECTED_NDK"
+          echo "ANDROID_NDK_HOME=$SELECTED_NDK" >> $GITHUB_ENV
+          echo "NDK_HOME=$SELECTED_NDK" >> $GITHUB_ENV
 
       - name: Set up Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -44,19 +45,14 @@ jobs:
       - name: Install cargo-ndk
         run: cargo install cargo-ndk
 
-      - name: Download game.zip (if provided)
-        if: "${{ github.event.inputs.game_zip_url != '' }}"
-        run: |
-          curl -L -o game.zip "${{ github.event.inputs.game_zip_url }}"
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
 
       - name: Build Android Native Library
         run: |
-          chmod +x make-android.sh
-          if [ -f "game.zip" ]; then
-            cargo ndk -t arm64-v8a build --release --lib
-          else
-            cargo ndk -t arm64-v8a build --release --lib
-          fi
+          cargo ndk -t arm64-v8a --platform 26 build --release --lib
           mkdir -p android/app/src/main/jniLibs/arm64-v8a
           cp target/aarch64-linux-android/release/libmuguet.so android/app/src/main/jniLibs/arm64-v8a/
 
@@ -69,10 +65,11 @@ jobs:
         run: |
           mkdir -p build
           find android/app/build/outputs/apk -name "*.apk" -exec cp {} build/gtav.apk \;
+          ls -la build/gtav.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: gtav.apk
+          name: gtav-android-apk
           path: build/gtav.apk
           if-no-files-found: error
