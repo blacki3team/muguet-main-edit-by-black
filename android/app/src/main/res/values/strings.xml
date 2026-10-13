@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">Muguet</string>
+    <string name="launcher_subtitle">Native GTA V Port for Android (Vulkan / WebAssembly)</string>
+    <string name="btn_import">Import game.zip</string>
+    <string name="btn_launch">PLAY GAME</string>
+    <string name="mode_story">Story Mode</string>
+    <string name="mode_sandbox">Sandbox / MP</string>
+    <string name="preset_battery">Battery (35% Scale · 30 FPS)</string>
+    <string name="preset_balanced">Balanced (50% Scale · 60 FPS)</string>
+    <string name="preset_quality">Quality (75% Scale · 60 FPS)</string>
+    <string name="preset_max">Max (100% Scale · 60 FPS)</string>
+    <string name="preset_custom">Custom Settings</string>
+    <string name="scale_label">Resolution Scale: %1$d%%</string>
+    <string name="fps_label">FPS Limit: %1$s</string>
+    <string name="sens_label">Touch Sensitivity: %1$.1fx</string>
+    <string name="opt_mute">Mute Audio</string>
+    <string name="opt_show_fps">Show FPS Counter</string>
+    <string name="multiplayer_title">Multiplayer (UDP 47520)</string>
+    <string name="mp_host">Host Server</string>
+    <string name="mp_server_hint">Server IP (leave blank to join local)</string>
+    <string name="mp_name_hint">Player Name</string>
+    <string name="status_ready">Game files ready to launch!</string>
+    <string name="status_missing">Game files missing: Click "Import game.zip" to start</string>
+    <string name="credit">by ztn2dev</string>
+</resources>
