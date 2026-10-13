@@ -24,29 +24,31 @@ jobs:
 
       - name: Locate Android SDK and NDK
         run: |
-          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-          # GitHub Actions Ubuntu runners come with NDK pre-installed
-          if [ -d "$ANDROID_HOME/ndk" ]; then
-            SELECTED_NDK=$(ls -d $ANDROID_HOME/ndk/* | sort -V | tail -n 1)
+          SDK_DIR="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          echo "ANDROID_HOME=$SDK_DIR" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
+          if [ -d "$SDK_DIR/ndk" ]; then
+            SELECTED_NDK=$(ls -d $SDK_DIR/ndk/* | sort -V | tail -n 1)
           else
-            yes | sdkmanager --licenses
+            yes | sdkmanager --licenses || true
             sdkmanager "ndk;26.3.11579264"
-            SELECTED_NDK="$ANDROID_HOME/ndk/26.3.11579264"
+            SELECTED_NDK="$SDK_DIR/ndk/26.3.11579264"
           fi
-          echo "Using NDK: $SELECTED_NDK"
+          echo "Selected NDK: $SELECTED_NDK"
           echo "ANDROID_NDK_HOME=$SELECTED_NDK" >> $GITHUB_ENV
           echo "NDK_HOME=$SELECTED_NDK" >> $GITHUB_ENV
 
       - name: Set up Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: stable
           targets: aarch64-linux-android
 
       - name: Install cargo-ndk
-        run: cargo install cargo-ndk
+        run: cargo install cargo-ndk --locked
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/gradle-build-action@v3
         with:
           gradle-version: '8.5'
 
@@ -55,6 +57,7 @@ jobs:
           cargo ndk -t arm64-v8a --platform 26 build --release --lib
           mkdir -p android/app/src/main/jniLibs/arm64-v8a
           cp target/aarch64-linux-android/release/libmuguet.so android/app/src/main/jniLibs/arm64-v8a/
+          ls -la android/app/src/main/jniLibs/arm64-v8a/libmuguet.so
 
       - name: Build APK with Gradle
         working-directory: android
