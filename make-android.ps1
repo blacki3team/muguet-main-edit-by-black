@@ -7,8 +7,48 @@ param(
     [string]$Device = ""
 )
 
+# Project paths & workspace support
+$ProjectDirs = @(
+    "C:\Users\ULTRAPC\Desktop\muguet-main\muguet-main",
+    "C:\Users\ULTRAPC\Desktop\muguet-main",
+    $PSScriptRoot
+)
+foreach ($dir in $ProjectDirs) {
+    if ($null -ne $dir -and (Test-Path "$dir\Cargo.toml")) {
+        Set-Location $dir
+        break
+    }
+}
+
+# Auto-detect Cargo and Rust
 if (Test-Path "$env:USERPROFILE\.cargo\bin") {
     $env:PATH = "$env:USERPROFILE\.cargo\bin;" + $env:PATH
+}
+
+# Auto-detect Adoptium JDK 17
+if ($null -eq $env:JAVA_HOME -or -not (Test-Path $env:JAVA_HOME)) {
+    $jdk = Get-ChildItem "C:\Program Files\Eclipse Adoptium" -Directory -Filter "jdk-17*" -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($null -ne $jdk) {
+        $env:JAVA_HOME = $jdk.FullName
+        $env:PATH = "$($jdk.FullName)\bin;" + $env:PATH
+    }
+}
+
+# Auto-find game.zip if not specified
+if ($Zip -eq "") {
+    $possibleZips = @(
+        "C:\Users\ULTRAPC\Desktop\muguet-main\game.zip",
+        "C:\Users\ULTRAPC\Desktop\muguet-main\muguet-main\game.zip",
+        "$PSScriptRoot\game.zip",
+        "$env:USERPROFILE\Downloads\game.zip"
+    )
+    foreach ($pz in $possibleZips) {
+        if (Test-Path $pz) {
+            $Zip = $pz
+            Write-Host "Found game package at: $Zip" -ForegroundColor Cyan
+            break
+        }
+    }
 }
 
 $ErrorActionPreference = "Stop"
@@ -18,6 +58,7 @@ $env:MUGUET_HEAP_GB = $HeapGB
 
 Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host " Building Muguet for Android ($Target)" -ForegroundColor Cyan
+Write-Host " Workspace: $PWD" -ForegroundColor Cyan
 Write-Host "=============================================" -ForegroundColor Cyan
 
 # 1. Process game zip if provided
